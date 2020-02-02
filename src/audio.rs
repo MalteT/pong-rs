@@ -108,7 +108,7 @@ pub fn play_score_sound(sounds: &Sounds, storage: &AssetStorage<Source>, output:
             }
         } else {
             if let Some(sound) = storage.get(&sounds.score_sfx) {
-                output.play_once(sound, 0.5);
+                output.play_once(sound, 0.3);
             }
         }
     }

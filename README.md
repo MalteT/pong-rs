@@ -2,6 +2,14 @@
 
 A Pong clone written in [Rust](https://rust-lang.org) using the [Amethyst](https://amethyst.rs) game engine.
 
+## Features
+
+- **Single Player Mode**
+- **Two Player Mode**
+- **Spinning the Ball**
+
+![demo](static/demo.png)
+
 #### Attributions
 
 - Thanks to [Jesús Lastra](https://opengameart.org/users/jalastram) for the [score sound](assets/audio/score.wav) from [here](https://opengameart.org/content/sound-effects-sfx010). [![licensebuttons cc-by][cc-by-3.0-badge]][cc-by-3.0]
