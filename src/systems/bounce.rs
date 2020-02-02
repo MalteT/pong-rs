@@ -1,14 +1,22 @@
 use amethyst::{
     assets::AssetStorage,
     audio::{output::Output, Source},
-    core::Transform,
+    core::{
+        math::{Rotation, Vector3},
+        Transform,
+    },
     ecs::prelude::{Join, Read, ReadExpect, ReadStorage, System, WriteStorage},
 };
 
+use std::f32::consts::PI as PI_F32;
 use std::ops::Deref;
 
-use crate::audio::{play_bounce_sound, Sounds};
+use crate::audio::{play_bounce_paddle_sound, play_bounce_wall_sound, Sounds};
 use crate::pong::{Ball, Paddle, Side, ARENA_HEIGHT};
+
+const GRIP_WALL: f32 = 0.5;
+const MAX_ROTATION_ON_COLLISION: f32 = 40.0 * 2.0 * PI_F32 / 360.0;
+const ROT_FACTOR: f32 = 0.3;
 
 pub struct BounceSystem;
 
@@ -31,53 +39,89 @@ impl<'s> System<'s> for BounceSystem {
         // We also check for the velocity of the ball every time, to prevent multiple collisions
         // from occurring.
         for (ball, transform) in (&mut balls, &transforms).join() {
-            let ball_x = transform.translation().x;
             let ball_y = transform.translation().y;
 
             // Bounce at the top or the bottom of the arena.
             if (ball_y <= ball.radius && ball.velocity[1] < 0.0)
                 || (ball_y >= ARENA_HEIGHT - ball.radius && ball.velocity[1] > 0.0)
             {
-                ball.velocity[1] = -ball.velocity[1];
-                play_bounce_sound(&*sounds, &storage, audio_output.as_ref().map(|o| o.deref()));
+                ball.velocity.y = -ball.velocity.y;
+                let sign = if ball_y < ARENA_HEIGHT / 2.0 {
+                    1.0
+                } else {
+                    -1.0
+                };
+                ball.velocity +=
+                    sign * GRIP_WALL * Vector3::new(ball.rot_velocity * ball.radius, 0.0, 0.0);
+                ball.rot_velocity *= 1.0 - GRIP_WALL;
+                play_bounce_wall_sound(
+                    &*sounds,
+                    &storage,
+                    audio_output.as_ref().map(|o| o.deref()),
+                );
             }
 
             // Bounce at the paddles.
             for (paddle, paddle_transform) in (&paddles, &transforms).join() {
-                let paddle_x = paddle_transform.translation().x - (paddle.width * 0.5);
-                let paddle_y = paddle_transform.translation().y - (paddle.height * 0.5);
-
-                // To determine whether the ball has collided with a paddle, we create a larger
-                // rectangle around the current one, by subtracting the ball radius from the
-                // lowest coordinates, and adding the ball radius to the highest ones. The ball
-                // is then within the paddle if its center is within the larger wrapper
-                // rectangle.
-                if point_in_rect(
-                    ball_x,
-                    ball_y,
-                    paddle_x - ball.radius,
-                    paddle_y - ball.radius,
-                    paddle_x + paddle.width + ball.radius,
-                    paddle_y + paddle.height + ball.radius,
-                ) {
-                    if (paddle.side == Side::Left && ball.velocity[0] < 0.0)
-                        || (paddle.side == Side::Right && ball.velocity[0] > 0.0)
-                    {
-                        ball.velocity[0] = -ball.velocity[0];
-                        play_bounce_sound(
+                match collision_degree(&ball, &transform, &paddle, &paddle_transform) {
+                    Some(degree) => {
+                        let axis = Vector3::z_axis();
+                        let sign = match paddle.side {
+                            Side::Left => 1.0,
+                            Side::Right => -1.0,
+                        };
+                        let unit = match paddle.side {
+                            Side::Left => Vector3::new(1.0_f32, 0.0, 0.0),
+                            Side::Right => Vector3::new(-1.0_f32, 0.0, 0.0),
+                        };
+                        let rotation = Rotation::from_axis_angle(
+                            &axis,
+                            sign * degree * MAX_ROTATION_ON_COLLISION,
+                        );
+                        // Add some rotation to the ball
+                        // This adds the angular rotation to the balls rotational speed.
+                        ball.rot_velocity += ROT_FACTOR * sign * paddle.velocity / ball.radius;
+                        // Ignore reflection physics and use a rotated perpendicular vector
+                        // of the same length as the incoming speed vector
+                        ball.velocity = rotation * (ball.velocity.norm() / unit.norm() * unit);
+                        ball.velocity *= 1.1;
+                        play_bounce_paddle_sound(
                             &*sounds,
                             &storage,
                             audio_output.as_ref().map(|o| o.deref()),
                         );
                     }
+                    None => {}
                 }
             }
         }
     }
 }
 
-// A point is in a box when its coordinates are smaller or equal than the top
-// right and larger or equal than the bottom left.
-fn point_in_rect(x: f32, y: f32, left: f32, bottom: f32, right: f32, top: f32) -> bool {
-    x >= left && x <= right && y >= bottom && y <= top
+fn collision_degree(
+    ball: &Ball,
+    ball_transform: &Transform,
+    paddle: &Paddle,
+    paddle_transform: &Transform,
+) -> Option<f32> {
+    let ball_x = ball_transform.translation().x;
+    let ball_y = ball_transform.translation().y;
+    let paddle_x = paddle_transform.translation().x;
+    let paddle_y = paddle_transform.translation().y;
+    let paddle_w = paddle.width * 0.5;
+    let paddle_h = paddle.height * 0.5;
+    let vel = ball.velocity.x;
+    if ball_y - ball.radius > paddle_y + paddle_h || ball_y + ball.radius < paddle_y - paddle_h {
+        // The ball is not within the height of the paddle.
+        return None;
+    }
+    match paddle.side {
+        Side::Left if ball_x - ball.radius < paddle_x + paddle_w && vel < 0.0 => {
+            Some((ball_y - paddle_y) / paddle_h)
+        }
+        Side::Right if ball_x + ball.radius > paddle_x - paddle_w && vel > 0.0 => {
+            Some((ball_y - paddle_y) / paddle_h)
+        }
+        _ => None,
+    }
 }

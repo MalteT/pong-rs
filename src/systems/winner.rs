@@ -1,6 +1,7 @@
 use amethyst::{
     assets::AssetStorage,
     audio::{output::Output, Source},
+    core::math::Vector3,
     core::transform::Transform,
     core::SystemDesc,
     derive::SystemDesc,
@@ -11,7 +12,9 @@ use amethyst::{
 use std::ops::Deref;
 
 use crate::audio::{play_score_sound, Sounds};
-use crate::pong::{Ball, ScoreBoard, ScoreText, ARENA_WIDTH, ARENA_HEIGHT};
+use crate::pong::{
+    random_45_vec, Ball, ScoreBoard, ScoreText, ARENA_HEIGHT, ARENA_WIDTH, INITIAL_BALL_SPEED,
+};
 
 #[derive(SystemDesc)]
 pub struct WinnerSystem;
@@ -57,7 +60,13 @@ impl<'s> System<'s> for WinnerSystem {
             };
 
             if did_hit {
-                ball.velocity[0] = -ball.velocity[0]; // Reverse Direction
+                let base_speed = if ball_x < ARENA_WIDTH / 2.0 {
+                    Vector3::x_axis()
+                } else {
+                    -Vector3::x_axis()
+                };
+                ball.velocity = random_45_vec(&base_speed, INITIAL_BALL_SPEED); // Reverse Direction
+                ball.rot_velocity = 0.0;
                 ball.hidden = Some(1.0);
                 transform.set_translation_x(ARENA_WIDTH / 2.0); // Reset Position
                 transform.set_translation_y(ARENA_HEIGHT / 2.0); // Reset Position

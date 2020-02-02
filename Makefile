@@ -5,6 +5,9 @@ run:
 rrun:
 	WINIT_UNIX_BACKEND=x11 cargo run --release
 
+rrrun:
+	WINIT_UNIX_BACKEND=x11 cargo run --release --features no-slow-safety-checks
+
 bundle: ./assets ./config ./src
 	rm pong.zip
 	cargo build --release

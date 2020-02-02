@@ -1,6 +1,6 @@
 [package]
 name = "amethyst-pong"
-version = "0.1.0"
+version = "0.2.0"
 authors = []
 edition = "2018"
 
@@ -11,3 +11,7 @@ features = ["vulkan", "nightly"]
 [dependencies]
 ron = "*"
 serde = "*"
+rand = "*"
+
+[features]
+no-slow-safety-checks = ["amethyst/no-slow-safety-checks"]

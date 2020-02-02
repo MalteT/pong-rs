@@ -1,24 +1,37 @@
 use amethyst::{
-    assets::{AssetStorage, Handle, Loader},
-    core::transform::Transform,
-    ecs::prelude::{Component, DenseVecStorage, Entity},
+    assets::{Handle, Loader},
+    core::math::{Rotation, Unit, Vector3},
+    ecs::{
+        prelude::{Component, DenseVecStorage, Entity},
+        Component as ComponentDer,
+    },
+    input::InputEvent,
     prelude::*,
-    renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
-    ui::{Anchor, TtfFormat, UiText, UiTransform},
+    shrev::EventChannel,
+    ui::{Anchor, TtfFormat, UiEventType, UiLoader, UiPrefab, UiText, UiTransform},
+    winit::{Event, WindowEvent},
 };
+use rand::{thread_rng, Rng};
 
-use crate::audio::initialize_audio;
+use std::f32::consts::FRAC_PI_4;
+
+use crate::states::MainMenuState;
+use crate::{find_ui, take_and_delete_if_some};
 
 pub const ARENA_HEIGHT: f32 = 100.0;
 pub const ARENA_WIDTH: f32 = 100.0;
-pub const PADDLE_HEIGHT: f32 = 16.0;
-pub const PADDLE_WIDTH: f32 = 4.0;
-pub const BALL_VELOCITY_X: f32 = 55.0;
-pub const BALL_VELOCITY_Y: f32 = 40.0;
-pub const BALL_RADIUS: f32 = 2.0;
+pub const INITIAL_BALL_SPEED: f32 = 65.0;
+
+pub const PADDLE_SIZE_COLLISION: [f32; 2] = [0.8, 14.13];
 
 #[derive(Default)]
-pub struct Pong;
+pub struct PauseState {
+    ui: Option<Handle<UiPrefab>>,
+    root: Option<Entity>,
+    resume: Option<Entity>,
+    quit: Option<Entity>,
+    main_menu: Option<Entity>,
+}
 
 #[derive(PartialEq, Eq)]
 pub enum Side {
@@ -26,17 +39,34 @@ pub enum Side {
     Right,
 }
 
+#[derive(ComponentDer)]
+pub struct Ai;
+
+#[derive(PartialEq)]
+pub enum PausedOrRunning {
+    Running,
+    Paused,
+}
+
+impl Default for PausedOrRunning {
+    fn default() -> Self {
+        Self::Running
+    }
+}
+
 pub struct Paddle {
     pub side: Side,
     pub width: f32,
     pub height: f32,
+    pub velocity: f32,
 }
 
 #[derive(Debug)]
 pub struct Ball {
-    pub velocity: [f32; 2],
+    pub velocity: Vector3<f32>,
     pub radius: f32,
     pub hidden: Option<f32>,
+    pub rot_velocity: f32,
 }
 
 /// ScoreBoard contains the actual score data
@@ -57,11 +87,12 @@ impl Component for Ball {
 }
 
 impl Paddle {
-    fn new(side: Side) -> Paddle {
+    pub fn new(side: Side) -> Paddle {
         Paddle {
             side,
-            width: PADDLE_WIDTH,
-            height: PADDLE_HEIGHT,
+            width: PADDLE_SIZE_COLLISION[0],
+            height: PADDLE_SIZE_COLLISION[1],
+            velocity: 0.0,
         }
     }
 }
@@ -70,116 +101,85 @@ impl Component for Paddle {
     type Storage = DenseVecStorage<Self>;
 }
 
-impl SimpleState for Pong {
+impl SimpleState for PauseState {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
-        let world = data.world;
+        if self.ui.is_none() {
+            self.ui = data
+                .world
+                .exec(|loader: UiLoader<'_>| loader.load("ui/pause.ron", ()))
+                .into();
+        }
+        self.root = data
+            .world
+            .create_entity()
+            .with(self.ui.clone().expect("UI not loaded"))
+            .build()
+            .into();
 
-        let sprites = load_sprite_sheet(world);
-
-        initialize_camera(world);
-        initialize_ball(world, sprites.clone());
-        initialize_paddles(world, sprites.clone());
-        initialize_scoreboard(world);
-        initialize_audio(world);
+        data.world.insert(PausedOrRunning::Paused);
+    }
+    fn on_stop(&mut self, mut data: StateData<'_, GameData<'_, '_>>) {
+        if let Some(state) = data.world.get_mut::<PausedOrRunning>() {
+            *state = PausedOrRunning::Running;
+        }
+        take_and_delete_if_some(&mut data.world, &mut self.root);
+        take_and_delete_if_some(&mut data.world, &mut self.main_menu);
+        take_and_delete_if_some(&mut data.world, &mut self.quit);
+        take_and_delete_if_some(&mut data.world, &mut self.resume);
+    }
+    fn handle_event(
+        &mut self,
+        data: StateData<'_, GameData<'_, '_>>,
+        event: StateEvent,
+    ) -> SimpleTrans {
+        use InputEvent::*;
+        use StateEvent::*;
+        match event {
+            Input(ActionPressed(action)) if action == "pause" => SimpleTrans::Pop,
+            Ui(ui_event) if ui_event.event_type == UiEventType::Click => {
+                if Some(ui_event.target) == self.quit {
+                    SimpleTrans::Quit
+                } else if Some(ui_event.target) == self.resume {
+                    SimpleTrans::Pop
+                } else if Some(ui_event.target) == self.main_menu {
+                    data.world
+                        .write_resource::<EventChannel<TransEvent<GameData<'_, '_>, StateEvent>>>()
+                        .single_write(Box::from(|| {
+                            SimpleTrans::Switch(Box::from(MainMenuState::default()))
+                        }));
+                    SimpleTrans::Pop
+                } else {
+                    SimpleTrans::None
+                }
+            }
+            _ => SimpleTrans::None,
+        }
+    }
+    fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
+        if self.main_menu.is_none() || self.resume.is_none() || self.quit.is_none() {
+            self.main_menu = data.world.exec(find_ui("main_menu"));
+            self.resume = data.world.exec(find_ui("resume"));
+            self.quit = data.world.exec(find_ui("quit"));
+        }
+        SimpleTrans::None
     }
 }
 
-/// Initializes one paddle on the left, and one paddle on the right.
-fn initialize_paddles(world: &mut World, sprite_sheet: Handle<SpriteSheet>) {
-    let mut left_transform = Transform::default();
-    let mut right_transform = Transform::default();
-
-    // Correctly position the paddles.
-    let y = ARENA_HEIGHT / 2.0;
-    left_transform.set_translation_xyz(PADDLE_WIDTH * 0.5, y, 0.0);
-    right_transform.set_translation_xyz(ARENA_WIDTH - PADDLE_WIDTH * 0.5, y, 0.0);
-
-    // Assign the sprites for the paddles
-    let sprite_render = SpriteRender {
-        sprite_sheet: sprite_sheet.clone(),
-        sprite_number: 0, // paddle is the first sprite in the sprite_sheet
-    };
-
-    // Create a left plank entity.
-    world
-        .create_entity()
-        .with(Paddle::new(Side::Left))
-        .with(sprite_render.clone())
-        .with(left_transform)
-        .build();
-
-    // Create right plank entity.
-    world
-        .create_entity()
-        .with(Paddle::new(Side::Right))
-        .with(sprite_render.clone())
-        .with(right_transform)
-        .build();
-}
-
-fn initialize_camera(world: &mut World) {
-    // Setup camera in a way that our screen covers whole arena
-    // and (0, 0) is in the bottom left.
-    let mut transform = Transform::default();
-    transform.set_translation_xyz(ARENA_WIDTH * 0.5, ARENA_HEIGHT * 0.5, 1.0);
-
-    world
-        .create_entity()
-        .with(Camera::standard_2d(ARENA_WIDTH, ARENA_HEIGHT))
-        .with(transform)
-        .build();
-}
-
-fn load_sprite_sheet(world: &mut World) -> Handle<SpriteSheet> {
-    // Load the sprite sheet necessary to render the graphics.
-    // The texture is the pixel data
-    // `texture_handle` is a cloneable reference to the texture
-    let texture_handle = {
-        let loader = world.read_resource::<Loader>();
-        let texture_storage = world.read_resource::<AssetStorage<Texture>>();
-        loader.load(
-            "texture/pong_spritesheet.png",
-            ImageFormat::default(),
-            (),
-            &texture_storage,
-        )
-    };
-    let loader = world.read_resource::<Loader>();
-    let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
-    loader.load(
-        "texture/pong_spritesheet.ron", // Here we load the associated ron file
-        SpriteSheetFormat(texture_handle),
-        (),
-        &sprite_sheet_store,
-    )
-}
-
-/// Initialises one ball in the middle-ish of the arena.
-fn initialize_ball(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
-    // Create the translation.
-    let mut local_transform = Transform::default();
-    local_transform.set_translation_xyz(ARENA_WIDTH / 2.0, ARENA_HEIGHT / 2.0, 0.0);
-
-    // Assign the sprite for the ball
-    let sprite_render = SpriteRender {
-        sprite_sheet: sprite_sheet_handle,
-        sprite_number: 1, // ball is the second sprite on the sprite sheet
-    };
-
-    world
-        .create_entity()
-        .with(sprite_render)
-        .with(Ball {
-            radius: BALL_RADIUS,
-            velocity: [BALL_VELOCITY_X, BALL_VELOCITY_Y],
-            hidden: Some(2.0),
-        })
-        .with(local_transform)
-        .build();
+pub fn pause_requested(event: &StateEvent) -> bool {
+    use InputEvent::*;
+    use StateEvent::*;
+    match event {
+        Input(ActionPressed(action)) if action == "pause" => true,
+        Window(Event::WindowEvent {
+            window_id: _,
+            event: WindowEvent::Focused(false),
+        }) => true,
+        _ => false,
+    }
 }
 
 /// Initialises a ui scoreboard
-fn initialize_scoreboard(world: &mut World) {
+pub fn initialize_scoreboard(world: &mut World) {
     let font = world.read_resource::<Loader>().load(
         "font/square.ttf",
         TtfFormat,
@@ -190,8 +190,8 @@ fn initialize_scoreboard(world: &mut World) {
         "P1".to_string(),
         Anchor::TopMiddle,
         Anchor::TopMiddle,
-        -100.,
-        -100.,
+        -110.,
+        -20.,
         1.,
         400.,
         100.,
@@ -200,8 +200,8 @@ fn initialize_scoreboard(world: &mut World) {
         "P2".to_string(),
         Anchor::TopMiddle,
         Anchor::TopMiddle,
-        100.,
-        -100.,
+        110.,
+        -20.,
         1.,
         400.,
         100.,
@@ -230,4 +230,11 @@ fn initialize_scoreboard(world: &mut World) {
         .build();
 
     world.insert(ScoreText { p1_score, p2_score });
+}
+
+pub fn random_45_vec(base: &Unit<Vector3<f32>>, norm: f32) -> Vector3<f32> {
+    let mut rng = thread_rng();
+    let angle = rng.gen_range(-FRAC_PI_4, FRAC_PI_4);
+    let rotation = Rotation::from_axis_angle(&Vector3::z_axis(), angle);
+    norm * (rotation * base.into_inner())
 }

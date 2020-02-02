@@ -99,6 +99,7 @@ name = "amethyst-pong"
 version = "0.1.0"
 dependencies = [
  "amethyst",
+ "rand 0.4.6",
  "ron",
  "serde",
 ]
