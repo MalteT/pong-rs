@@ -6,9 +6,7 @@ use amethyst::{
     ecs::prelude::{Join, Read, System, SystemData, WriteStorage},
 };
 
-use crate::pong::Ball;
-
-const SPEED_ROT_FACTOR: f32 = 0.01;
+use crate::pong::{Ball, SPEED_ROT_FACTOR};
 
 #[derive(SystemDesc)]
 pub struct MoveBallsSystem;

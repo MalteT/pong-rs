@@ -5,25 +5,33 @@ use amethyst::{
         Component as ComponentDer,
     },
     input::InputEvent,
-    prelude::*,
+    prelude::StateEvent,
     winit::{Event, WindowEvent},
 };
 use rand::{thread_rng, Rng};
 
-use std::f32::consts::FRAC_PI_4;
+use std::f32::consts::{FRAC_PI_4, PI};
 
 pub const ARENA_HEIGHT: f32 = 100.0;
 pub const ARENA_WIDTH: f32 = 100.0;
 pub const INITIAL_BALL_SPEED: f32 = 65.0;
+pub const BOTTOM_OF_SCREEN: f32 = ARENA_HEIGHT - PADDLE_SIZE_COLLISION[1] * 0.5;
+pub const TOP_OF_SCREEN: f32 = PADDLE_SIZE_COLLISION[1] * 0.5;
 
+pub const PADDLE_SIZE: [f32; 2] = [5.0, 20.0];
+pub const BALL_RADIUS: f32 = 3.0;
+
+pub const BALL_TEXTURE_SIZE: [f32; 2] = [50.0, 50.0];
+pub const PADDLE_TEXTURE_SIZE: [f32; 2] = [50.0, 150.0];
+
+pub const BALL_RADIUS_COLLISION: f32 = 1.2;
 pub const PADDLE_SIZE_COLLISION: [f32; 2] = [0.8, 14.13];
+pub const PADDLE_WALL_OFFSET: f32 = 2.0;
 
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub enum State {
-    MainMenu,
-    Game,
-    Pause,
-}
+pub const GRIP_WALL: f32 = 0.5;
+pub const MAX_ROTATION_ON_COLLISION: f32 = 40.0 * 2.0 * PI / 360.0;
+pub const ROT_FACTOR: f32 = 0.3;
+pub const SPEED_ROT_FACTOR: f32 = 0.01;
 
 #[derive(PartialEq, Eq)]
 pub enum Side {

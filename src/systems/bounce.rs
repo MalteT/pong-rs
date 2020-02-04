@@ -8,15 +8,12 @@ use amethyst::{
     ecs::prelude::{Join, Read, ReadExpect, ReadStorage, System, WriteStorage},
 };
 
-use std::f32::consts::PI as PI_F32;
 use std::ops::Deref;
 
-use crate::audio::{play_bounce_paddle_sound, play_bounce_wall_sound, Sounds};
-use crate::pong::{Ball, Paddle, Side, ARENA_HEIGHT};
-
-const GRIP_WALL: f32 = 0.5;
-const MAX_ROTATION_ON_COLLISION: f32 = 40.0 * 2.0 * PI_F32 / 360.0;
-const ROT_FACTOR: f32 = 0.3;
+use crate::{
+    audio::{play_bounce_paddle_sound, play_bounce_wall_sound, Sounds},
+    pong::{Ball, Paddle, Side, ARENA_HEIGHT, GRIP_WALL, MAX_ROTATION_ON_COLLISION, ROT_FACTOR},
+};
 
 pub struct BounceSystem;
 
@@ -35,9 +32,8 @@ impl<'s> System<'s> for BounceSystem {
         (mut balls, paddles, transforms, storage, sounds, audio_output): Self::SystemData,
     ) {
         // Check whether a ball collided, and bounce off accordingly.
-        //
-        // We also check for the velocity of the ball every time, to prevent multiple collisions
-        // from occurring.
+        // We also check for the velocity of the ball every time,
+        // to prevent multiple collisions from occurring.
         for (ball, transform) in (&mut balls, &transforms).join() {
             let ball_y = transform.translation().y;
 

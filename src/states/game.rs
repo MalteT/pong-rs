@@ -1,7 +1,6 @@
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
-    core::{math::Vector3, transform::Transform},
-    core::{ArcThreadPool, SystemExt},
+    core::{math::Vector3, transform::Transform, ArcThreadPool, SystemExt},
     ecs::{world::Builder, Dispatcher, DispatcherBuilder},
     prelude::{GameData, SimpleState, SimpleTrans, StateData, StateEvent, World, WorldExt},
     renderer::{
@@ -12,32 +11,16 @@ use amethyst::{
     utils::removal::{exec_removal, Removal},
 };
 
-use crate::pong::pause_requested;
-use crate::pong::random_45_vec;
-use crate::pong::Ai;
-use crate::pong::Ball;
-use crate::pong::Paddle;
-use crate::pong::PausedOrRunning;
-use crate::pong::ScoreBoard;
-use crate::pong::ScoreText;
-use crate::pong::Side;
-use crate::pong::State;
-use crate::states::PauseState;
-use crate::systems;
-
-pub const ARENA_HEIGHT: f32 = 100.0;
-pub const ARENA_WIDTH: f32 = 100.0;
-pub const INITIAL_BALL_SPEED: f32 = 65.0;
-
-pub const PADDLE_SIZE: [f32; 2] = [5.0, 20.0];
-pub const BALL_RADIUS: f32 = 3.0;
-pub const BALL_TEXTURE_SIZE: [f32; 2] = [50.0, 50.0];
-pub const PADDLE_TEXTURE_SIZE: [f32; 2] = [50.0, 150.0];
-
-pub const BALL_RADIUS_COLLISION: f32 = 1.2;
-pub const PADDLE_SIZE_COLLISION: [f32; 2] = [0.8, 14.13];
-
-pub const PADDLE_WALL_OFFSET: f32 = 2.0;
+use crate::{
+    pong::{
+        pause_requested, random_45_vec, Ai, Ball, Paddle, PausedOrRunning, ScoreBoard, ScoreText,
+        Side, ARENA_HEIGHT, ARENA_WIDTH, BALL_RADIUS, BALL_RADIUS_COLLISION, BALL_TEXTURE_SIZE,
+        INITIAL_BALL_SPEED, PADDLE_SIZE, PADDLE_SIZE_COLLISION, PADDLE_TEXTURE_SIZE,
+        PADDLE_WALL_OFFSET,
+    },
+    states::{PauseState, State},
+    systems,
+};
 
 pub struct GameState<'a, 'b> {
     dispatcher: Option<Dispatcher<'a, 'b>>,

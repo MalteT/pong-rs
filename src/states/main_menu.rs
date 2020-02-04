@@ -1,17 +1,14 @@
 use amethyst::{
     assets::Handle,
     ecs::prelude::Entity,
-    prelude::*,
+    prelude::{Builder, GameData, SimpleState, SimpleTrans, StateData, StateEvent, WorldExt},
     ui::{UiEventType, UiLoader, UiPrefab},
     utils::removal::{exec_removal, Removal},
 };
 
-use super::GameState;
-use crate::audio::initialize_audio;
-use crate::find_ui;
-use crate::pong::State;
+use super::{GameState, State};
+use crate::{audio::initialize_audio, find_ui};
 
-//const MENU_ROOT_ID: &'static str = "main_menu_root";
 const MENU_BTN_SINGLE_PLAYER_ID: &'static str = "btn_single_player";
 const MENU_BTN_TWO_PLAYER_ID: &'static str = "btn_two_player";
 const MENU_BTN_QUIT_ID: &'static str = "btn_quit";

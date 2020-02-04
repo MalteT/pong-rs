@@ -12,9 +12,15 @@ use amethyst::{
 
 use crate::{
     find_ui,
-    pong::{PausedOrRunning, State},
-    states::MainMenuState,
+    pong::PausedOrRunning,
+    states::{MainMenuState, State},
 };
+
+const MENU_BTN_MAIN_MENU_ID: &str = "btn_main_menu";
+const MENU_BTN_RESUME_ID: &str = "btn_resume";
+const MENU_BTN_QUIT_ID: &str = "btn_quit";
+const MENU_RON: &str = "ui/pause.ron";
+const ACTION_PAUSE: &str = "pause";
 
 #[derive(Default)]
 pub struct PauseState {
@@ -32,7 +38,7 @@ impl SimpleState for PauseState {
 
         if self.ui.is_none() {
             self.ui = world
-                .exec(|loader: UiLoader<'_>| loader.load("ui/pause.ron", ()))
+                .exec(|loader: UiLoader<'_>| loader.load(MENU_RON, ()))
                 .into();
         }
         self.root = world
@@ -62,7 +68,7 @@ impl SimpleState for PauseState {
         use InputEvent::*;
         use StateEvent::*;
         match event {
-            Input(ActionPressed(action)) if action == "pause" => SimpleTrans::Pop,
+            Input(ActionPressed(action)) if action == ACTION_PAUSE => SimpleTrans::Pop,
             Ui(ui_event) if ui_event.event_type == UiEventType::Click => {
                 if Some(ui_event.target) == self.quit {
                     SimpleTrans::Quit
@@ -84,9 +90,9 @@ impl SimpleState for PauseState {
     }
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         if self.main_menu.is_none() || self.resume.is_none() || self.quit.is_none() {
-            self.main_menu = data.world.exec(find_ui("main_menu"));
-            self.resume = data.world.exec(find_ui("resume"));
-            self.quit = data.world.exec(find_ui("quit"));
+            self.main_menu = data.world.exec(find_ui(MENU_BTN_MAIN_MENU_ID));
+            self.resume = data.world.exec(find_ui(MENU_BTN_RESUME_ID));
+            self.quit = data.world.exec(find_ui(MENU_BTN_QUIT_ID));
         }
         SimpleTrans::None
     }

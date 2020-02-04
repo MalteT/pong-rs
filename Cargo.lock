@@ -99,7 +99,7 @@ dependencies = [
 
 [[package]]
 name = "amethyst-pong"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "amethyst",
  "rand 0.4.6",

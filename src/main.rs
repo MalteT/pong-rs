@@ -1,13 +1,13 @@
-//! Pong Tutorial 1
 #![warn(rust_2018_idioms)]
 #![forbid(unsafe_code)]
+//! Pong Tutorial 1
 
 use amethyst::{
     audio::{AudioBundle, DjSystem},
     core::transform::TransformBundle,
     ecs::prelude::Entity,
     input::{InputBundle, StringBindings},
-    prelude::*,
+    prelude::{GameDataBuilder, Application, SystemExt},
     renderer::{
         plugins::{RenderFlat2D, RenderToWindow},
         types::DefaultBackend,

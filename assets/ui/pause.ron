@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 Container(
     transform: (
-        id: "pause_menu",
+        id: "root_pause_menu",
         anchor: Middle,
         stretch: XY( x_margin: 0.0, y_margin: 0.0, keep_aspect_ratio: true),
 
@@ -15,7 +15,7 @@ Container(
     children: [
         Button(
             transform: (
-                id: "resume",
+                id: "btn_resume",
                 x: 0.0,
                 y: 50.0,
 
@@ -44,7 +44,7 @@ Container(
         ),
         Button(
             transform: (
-                id: "main_menu",
+                id: "btn_main_menu",
                 x: 0.0,
                 y: 0.0,
 
@@ -73,7 +73,7 @@ Container(
         ),
         Button(
             transform: (
-                id: "quit",
+                id: "btn_quit",
                 x: 0.0,
                 y: -50.0,
 

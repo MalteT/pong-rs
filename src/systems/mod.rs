@@ -1,3 +1,4 @@
+//! All systems running for the game.
 mod ai;
 mod bounce;
 mod move_balls;

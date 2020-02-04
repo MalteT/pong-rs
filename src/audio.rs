@@ -5,14 +5,14 @@ use amethyst::{
 };
 use rand::{thread_rng, Rng};
 
-use std::iter::Cycle;
-use std::vec::IntoIter;
+use std::{iter::Cycle, vec::IntoIter};
 
 const BOUNCE_WALL_SOUND: &str = "audio/bounce_wall.wav";
 const BOUNCE_PADDLE_SOUND: &str = "audio/bounce_paddle.wav";
 const SCORE_SOUND: &str = "audio/score.wav";
 const WILHELM_SOUND: &str = "audio/wilhelm.ogx";
 const ROBLOX_SOUND: &str = "audio/Roblox-death-sound.mp3";
+
 const MUSIC_TRACKS: &[&str] = &[
     "audio/Computer_Music_All-Stars_-_Wheres_My_Jetpack.ogg",
     "audio/Computer_Music_All-Stars_-_Albatross_v2.ogg",

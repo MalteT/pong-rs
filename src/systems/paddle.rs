@@ -1,16 +1,14 @@
-use amethyst::core::{math::clamp, timing::Time, Transform};
-use amethyst::derive::SystemDesc;
-use amethyst::ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage};
-use amethyst::input::{InputHandler, StringBindings};
+use amethyst::{
+    core::{math::clamp, timing::Time, Transform},
+    derive::SystemDesc,
+    ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage},
+    input::{InputHandler, StringBindings},
+};
 
-// You'll have to mark PADDLE_HEIGHT as public in pong.rs
-use crate::pong::{Ai, Paddle, Side, ARENA_HEIGHT, PADDLE_SIZE_COLLISION};
+use crate::pong::{Ai, Paddle, Side, BOTTOM_OF_SCREEN, TOP_OF_SCREEN};
 
 #[derive(SystemDesc)]
 pub struct PaddleSystem;
-
-const BOTTOM_OF_SCREEN: f32 = ARENA_HEIGHT - PADDLE_SIZE_COLLISION[1] * 0.5;
-const TOP_OF_SCREEN: f32 = PADDLE_SIZE_COLLISION[1] * 0.5;
 
 impl<'s> System<'s> for PaddleSystem {
     type SystemData = (
