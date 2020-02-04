@@ -3,11 +3,13 @@ use amethyst::{
     ecs::prelude::Entity,
     prelude::*,
     ui::{UiEventType, UiLoader, UiPrefab},
+    utils::removal::{exec_removal, Removal},
 };
 
-use crate::audio::initialize_audio;
-use crate::{find_ui, take_and_delete_if_some};
 use super::GameState;
+use crate::audio::initialize_audio;
+use crate::find_ui;
+use crate::pong::State;
 
 //const MENU_ROOT_ID: &'static str = "main_menu_root";
 const MENU_BTN_SINGLE_PLAYER_ID: &'static str = "btn_single_player";
@@ -28,6 +30,7 @@ pub struct MainMenuState {
 impl SimpleState for MainMenuState {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
+        world.register::<Removal<State>>();
         initialize_audio(world);
 
         // Load main menu prefab
@@ -39,16 +42,18 @@ impl SimpleState for MainMenuState {
         self.root = world
             .create_entity()
             .with(self.ui.clone().expect("UI not loaded"))
+            .with(Removal::new(State::MainMenu))
             .build()
             .into();
-
     }
-    fn on_stop(&mut self, mut data: StateData<'_, GameData<'_, '_>>) {
+    fn on_stop(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         // Delete everything we have
-        take_and_delete_if_some(&mut data.world, &mut self.root);
-        take_and_delete_if_some(&mut data.world, &mut self.single_player);
-        take_and_delete_if_some(&mut data.world, &mut self.two_player);
-        take_and_delete_if_some(&mut data.world, &mut self.quit);
+        let world = data.world;
+        exec_removal(&world.entities(), &world.read_storage(), State::MainMenu);
+        self.root = None;
+        self.single_player = None;
+        self.two_player = None;
+        self.quit = None;
     }
     fn handle_event(
         &mut self,
@@ -58,7 +63,6 @@ impl SimpleState for MainMenuState {
         use StateEvent::*;
         match event {
             Ui(ui_event) if ui_event.event_type == UiEventType::Click => {
-                eprintln!("{:?}", ui_event);
                 if Some(ui_event.target) == self.quit {
                     SimpleTrans::Quit
                 } else if Some(ui_event.target) == self.single_player {

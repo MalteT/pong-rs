@@ -3,7 +3,7 @@ use amethyst::derive::SystemDesc;
 use amethyst::ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage};
 
 // You'll have to mark PADDLE_HEIGHT as public in pong.rs
-use crate::pong::{Ai, Paddle, Ball, ARENA_HEIGHT, PADDLE_SIZE_COLLISION};
+use crate::pong::{Ai, Ball, Paddle, ARENA_HEIGHT, PADDLE_SIZE_COLLISION};
 
 #[derive(SystemDesc)]
 pub struct AiSystem;
@@ -25,7 +25,7 @@ impl<'s> System<'s> for AiSystem {
             Some(tuple) => tuple,
             None => {
                 eprintln!("No ball in system. Ai useless..");
-                return
+                return;
             }
         };
         let ball_transform = ball_transform.clone();

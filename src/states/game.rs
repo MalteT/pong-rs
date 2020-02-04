@@ -2,28 +2,27 @@ use amethyst::{
     assets::{AssetStorage, Handle, Loader},
     core::{math::Vector3, transform::Transform},
     core::{ArcThreadPool, SystemExt},
-    ecs::{
-        prelude::{Entities, Join, ReadStorage},
-        world::Builder,
-        Component, Dispatcher, DispatcherBuilder,
-    },
+    ecs::{world::Builder, Dispatcher, DispatcherBuilder},
     prelude::{GameData, SimpleState, SimpleTrans, StateData, StateEvent, World, WorldExt},
     renderer::{
         transparent::Transparent, Camera, ImageFormat, SpriteRender, SpriteSheet,
         SpriteSheetFormat, Texture,
     },
+    ui::{Anchor, TtfFormat, UiText, UiTransform},
+    utils::removal::{exec_removal, Removal},
 };
 
-use crate::pong::initialize_scoreboard;
 use crate::pong::pause_requested;
 use crate::pong::random_45_vec;
+use crate::pong::Ai;
 use crate::pong::Ball;
 use crate::pong::Paddle;
-use crate::pong::PauseState;
 use crate::pong::PausedOrRunning;
+use crate::pong::ScoreBoard;
 use crate::pong::ScoreText;
 use crate::pong::Side;
-use crate::pong::Ai;
+use crate::pong::State;
+use crate::states::PauseState;
 use crate::systems;
 
 pub const ARENA_HEIGHT: f32 = 100.0;
@@ -63,6 +62,9 @@ impl GameState<'_, '_> {
 impl SimpleState for GameState<'_, '_> {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
+        world.register::<Removal<State>>();
+        // Create a blank score board
+        world.insert(ScoreBoard::default());
 
         // Create the `DispatcherBuilder` and register some `System`s
         // that should only run for this `State`.
@@ -105,13 +107,7 @@ impl SimpleState for GameState<'_, '_> {
     }
     fn on_stop(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
-
-        delete_all_with::<Paddle>(world);
-        delete_all_with::<Ball>(world);
-        if let Some(score_text) = world.remove::<ScoreText>() {
-            world.delete_entity(score_text.p1_score).ok();
-            world.delete_entity(score_text.p2_score).ok();
-        }
+        exec_removal(&world.entities(), &world.read_storage(), State::Game);
     }
     fn handle_event(
         &mut self,
@@ -131,18 +127,6 @@ impl SimpleState for GameState<'_, '_> {
 
         SimpleTrans::None
     }
-}
-
-fn delete_all_with<T>(world: &mut World)
-where
-    T: Component + Sync + Send,
-{
-    world.exec(|(entities, tags): (Entities<'_>, ReadStorage<'_, T>)| {
-        for (_, e) in (&tags, &entities).join() {
-            entities.delete(e).ok();
-        }
-    });
-    world.maintain();
 }
 
 /// Initializes one paddle on the left, and one paddle on the right.
@@ -188,6 +172,7 @@ fn initialize_paddles(world: &mut World, sprite_sheet: Handle<SpriteSheet>, two_
         .with(sprite_render.clone())
         .with(left_transform)
         .with(Transparent)
+        .with(Removal::new(State::Game))
         .build();
 
     // Create right plank entity.
@@ -196,7 +181,8 @@ fn initialize_paddles(world: &mut World, sprite_sheet: Handle<SpriteSheet>, two_
         .with(Paddle::new(Side::Right))
         .with(sprite_render.clone())
         .with(right_transform)
-        .with(Transparent);
+        .with(Transparent)
+        .with(Removal::new(State::Game));
     // Add AI if only one player is playing
     if !two_players {
         right = right.with(Ai);
@@ -214,6 +200,7 @@ fn initialize_camera(world: &mut World) {
         .create_entity()
         .with(Camera::standard_2d(ARENA_WIDTH, ARENA_HEIGHT))
         .with(transform)
+        .with(Removal::new(State::Game))
         .build();
 }
 
@@ -272,5 +259,62 @@ fn initialize_ball(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) 
         })
         .with(local_transform)
         .with(Transparent)
+        .with(Removal::new(State::Game))
         .build();
+}
+
+/// Initialises a ui scoreboard
+pub fn initialize_scoreboard(world: &mut World) {
+    let font = world.read_resource::<Loader>().load(
+        "font/square.ttf",
+        TtfFormat,
+        (),
+        &world.read_resource(),
+    );
+    let p1_transform = UiTransform::new(
+        "P1".to_string(),
+        Anchor::TopMiddle,
+        Anchor::TopMiddle,
+        -110.,
+        -20.,
+        1.,
+        400.,
+        100.,
+    );
+    let p2_transform = UiTransform::new(
+        "P2".to_string(),
+        Anchor::TopMiddle,
+        Anchor::TopMiddle,
+        110.,
+        -20.,
+        1.,
+        400.,
+        100.,
+    );
+
+    let p1_score = world
+        .create_entity()
+        .with(p1_transform)
+        .with(UiText::new(
+            font.clone(),
+            "0".to_string(),
+            [1.0, 0.0, 0.0, 0.2],
+            100.,
+        ))
+        .with(Removal::new(State::Game))
+        .build();
+
+    let p2_score = world
+        .create_entity()
+        .with(p2_transform)
+        .with(UiText::new(
+            font.clone(),
+            "0".to_string(),
+            [1.0, 0.0, 0.0, 0.2],
+            100.,
+        ))
+        .with(Removal::new(State::Game))
+        .build();
+
+    world.insert(ScoreText { p1_score, p2_score });
 }

@@ -89,19 +89,6 @@ where
     ron::de::from_reader(&file)
 }
 
-// Trys to delete the given entity, if some. If successful, the entity
-// is taken from the Option, leaving `None` in place.
-fn take_and_delete_if_some(world: &mut World, entity: &mut Option<Entity>) {
-    match entity {
-        Some(ref mut inner) => {
-            if world.delete_entity(*inner).is_ok() {
-                let _ = entity.take();
-            }
-        }
-        None => {}
-    }
-}
-
 /// Find's the UI Element by name
 fn find_ui(name: &'static str) -> impl FnOnce(UiFinder<'_>) -> Option<Entity> {
     move |finder| finder.find(name)
