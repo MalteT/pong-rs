@@ -9,12 +9,15 @@ rrrun:
 	WINIT_UNIX_BACKEND=x11 cargo run --release --features no-slow-safety-checks
 
 bundle: ./assets ./config ./src
-	rm pong.zip
-	cargo build --release
+	@if [ -f pong.tar.gz ]; then\
+		rm pong.tar.gz;\
+	fi
+	cargo build --release --features no-slow-safety-checks
 	mkdir -p pong
 	cp target/release/amethyst-pong pong/pong
 	strip pong/pong
+	chmod +x pong/pong
 	cp -r assets pong/assets
 	cp -r config pong/config
-	zip -r pong.zip pong
+	tar czf pong.tar.gz pong -p
 	rm -r pong

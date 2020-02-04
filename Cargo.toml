@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies.amethyst]
 version = "0.14"
-features = ["vulkan", "nightly"]
+features = ["nightly"]
 
 [dependencies]
 ron = "*"
@@ -14,4 +14,7 @@ serde = "*"
 rand = "*"
 
 [features]
+default = ["vulkan"]
 no-slow-safety-checks = ["amethyst/no-slow-safety-checks"]
+vulkan = ["amethyst/vulkan"]
+metal = ["amethyst/metal"]
