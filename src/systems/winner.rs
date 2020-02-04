@@ -3,9 +3,8 @@ use amethyst::{
     audio::{output::Output, Source},
     core::math::Vector3,
     core::transform::Transform,
-    core::SystemDesc,
     derive::SystemDesc,
-    ecs::prelude::{Join, Read, ReadExpect, System, SystemData, World, Write, WriteStorage},
+    ecs::prelude::{Join, Read, ReadExpect, System, SystemData, Write, WriteStorage},
     ui::UiText,
 };
 

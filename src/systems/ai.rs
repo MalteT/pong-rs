@@ -1,6 +1,6 @@
-use amethyst::core::{math::clamp, timing::Time, SystemDesc, Transform};
+use amethyst::core::{math::clamp, timing::Time, Transform};
 use amethyst::derive::SystemDesc;
-use amethyst::ecs::{Join, Read, ReadStorage, System, SystemData, World, WriteStorage};
+use amethyst::ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage};
 
 // You'll have to mark PADDLE_HEIGHT as public in pong.rs
 use crate::pong::{Ai, Paddle, Ball, ARENA_HEIGHT, PADDLE_SIZE_COLLISION};

@@ -1,11 +1,11 @@
 [package]
 name = "amethyst-pong"
-version = "0.2.1"
+version = "0.3.0"
 authors = []
 edition = "2018"
 
 [dependencies.amethyst]
-version = "0.13"
+version = "0.14"
 features = ["vulkan", "nightly"]
 
 [dependencies]

@@ -1,6 +1,6 @@
-use amethyst::core::{math::clamp, timing::Time, SystemDesc, Transform};
+use amethyst::core::{math::clamp, timing::Time, Transform};
 use amethyst::derive::SystemDesc;
-use amethyst::ecs::{Join, Read, ReadStorage, System, SystemData, World, WriteStorage};
+use amethyst::ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage};
 use amethyst::input::{InputHandler, StringBindings};
 
 // You'll have to mark PADDLE_HEIGHT as public in pong.rs
