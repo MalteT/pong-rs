@@ -10,6 +10,21 @@ A Pong clone written in [Rust](https://rust-lang.org) using the [Amethyst](https
 
 ![demo](static/demo.png)
 
+## Running the Game
+
+You need to have vulkan support and the vulkan library.
+Clone this repo and run the following to compile and run the program:
+```
+> cargo run --locked
+```
+
+You might need to change the backend on mac to `metal` instead of `vulkan`:
+```
+> cargo run --locked --no-default-features --features metal
+```
+
+If you run into problems under Wayland set the following `WINIT_UNIX_BACKEND` environment variable to `x11`!
+
 #### Attributions
 
 - Thanks to [Jesús Lastra](https://opengameart.org/users/jalastram) for the [score sound](assets/audio/score.wav) from [here](https://opengameart.org/content/sound-effects-sfx010). [![licensebuttons cc-by][cc-by-3.0-badge]][cc-by-3.0]
