@@ -12,15 +12,15 @@ A Pong clone written in [Rust](https://rust-lang.org) using the [Amethyst](https
 
 ## Running the Game
 
-You need to have vulkan support and the vulkan library.
+You need to have vulkan support and the vulkan library. You also need the recent nightly rust compiler.
 Clone this repo and run the following to compile and run the program:
 ```
-> cargo run --locked
+> cargo +nightly run --locked
 ```
 
 You might need to change the backend on mac to `metal` instead of `vulkan`:
 ```
-> cargo run --locked --no-default-features --features metal
+> cargo +nightly run --locked --no-default-features --features metal
 ```
 
 If you run into problems under Wayland set the following `WINIT_UNIX_BACKEND` environment variable to `x11`!
