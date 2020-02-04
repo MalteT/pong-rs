@@ -1,4 +1,4 @@
-# Amethyst-Pong
+# Pong
 
 A Pong clone written in [Rust](https://rust-lang.org) using the [Amethyst](https://amethyst.rs) game engine.
 
